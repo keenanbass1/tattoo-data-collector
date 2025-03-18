@@ -23,6 +23,7 @@ A web application for tattoo artists to collect data on tattoos, including image
 - Express
 - MongoDB/Mongoose
 - Multer for file uploads
+<<<<<<< HEAD
 - Store data in MongoDB for future AI training
 
 ## Setup Instructions
@@ -75,3 +76,14 @@ The data is stored in MongoDB in a format ready for AI training. You can export 
 ## License
 
 MIT
+=======
+
+## Deployment
+
+This project can be deployed on Render.com using the provided render.yaml configuration.
+
+## Environment Variables
+
+- `PORT`: The port the server will run on (default: 3000)
+- `MONGODB_URI`: Your MongoDB connection string
+>>>>>>> 18af69c0790b37744a73cde7c69ea9912a233da9

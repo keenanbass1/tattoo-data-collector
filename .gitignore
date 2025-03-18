@@ -32,4 +32,12 @@ logs
 
 # Temporary files
 *.tmp
+<<<<<<< HEAD
 *.temp
+=======
+*.temp
+
+# Uploads directory content (but keep the directory)
+uploads/*
+!uploads/.gitkeep
+>>>>>>> 18af69c0790b37744a73cde7c69ea9912a233da9
