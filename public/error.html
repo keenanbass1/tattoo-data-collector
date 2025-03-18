@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Error - Tattoo Data Collector</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .error-container {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .error-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      color: #e74c3c;
+    }
+    .error-title {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .error-message {
+      font-size: 16px;
+      margin-bottom: 30px;
+      color: #666;
+    }
+    .error-action {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.3s;
+    }
+    .error-action:hover {
+      background-color: #3367d6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tattoo Data Collector</h1>
+    
+    <div class="card error-container">
+      <div class="error-icon">⚠️</div>
+      <h2 class="error-title">Something went wrong</h2>
+      <p class="error-message" id="errorMessage">We're experiencing technical difficulties. Please try again later.</p>
+      <a href="/" class="error-action">Go back to home</a>
+    </div>
+  </div>
+
+  <script>
+    // Extract error message from URL if present
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const errorMsg = params.get('message');
+      
+      if (errorMsg) {
+        document.getElementById('errorMessage').textContent = errorMsg;
+      }
+    });
+  </script>
+</body>
+</html>
