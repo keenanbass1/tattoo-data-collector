@@ -8,6 +8,21 @@ A web application for tattoo artists to collect data on tattoos, including image
 - Record price and time data for each tattoo
 - Add tags to categorize tattoos
 - View all collected tattoo data
+- MongoDB storage
+
+## Setup
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create a `.env` file with your MongoDB Atlas connection string
+4. Run the application: `npm start`
+
+## Technologies Used
+
+- Node.js
+- Express
+- MongoDB/Mongoose
+- Multer for file uploads
 - Store data in MongoDB for future AI training
 
 ## Setup Instructions
