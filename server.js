@@ -101,14 +101,17 @@ app.get('/api/tattoos', async (req, res) => {
   }
 });
 
-// Connect to MongoDB (local for development, can be changed to Atlas for production)
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tattoo-data')
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+// Start the server first, then connect to MongoDB
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  
+  // Connect to MongoDB after server has started
+  mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tattoo-data')
+    .then(() => {
+      console.log('Connected to MongoDB');
+    })
+    .catch(err => {
+      console.error('MongoDB connection error:', err);
+      // Application continues running even if MongoDB connection fails
     });
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-  });
+});
