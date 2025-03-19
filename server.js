@@ -4,7 +4,15 @@ const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const app = express();
 const PORT = process.env.PORT || 10000; // Changed to match .env
@@ -22,15 +30,8 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function(req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// Set up multer for file uploads - use memory storage for Cloudinary
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,
@@ -78,16 +79,29 @@ app.post('/api/tattoos', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
-    const { price, timeInMinutes, tags } = req.body;
+    const { price, timeInHours, tags } = req.body;
     
-    if (!price || !timeInMinutes) {
+    if (!price || !timeInHours) {
       return res.status(400).json({ error: 'Price and time are required' });
     }
+    
+    // Upload to Cloudinary
+    const fileBuffer = req.file.buffer;
+    const fileType = req.file.mimetype;
+    
+    // Convert buffer to data URI
+    const dataURI = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
+    
+    // Upload to Cloudinary
+    const cloudinaryResult = await cloudinary.uploader.upload(dataURI, {
+      folder: 'tattoo-data', // Creates a folder in your Cloudinary account
+      resource_type: 'image'
+    });
 
     const newTattoo = new Tattoo({
-      imageUrl: `/uploads/${req.file.filename}`,
+      imageUrl: cloudinaryResult.secure_url, // Use the Cloudinary URL
       price: parseFloat(price),
-      timeInMinutes: parseInt(timeInMinutes),
+      timeInMinutes: parseFloat(timeInHours) * 60, // Convert hours to minutes
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     });
 
@@ -163,6 +177,8 @@ app.get('/uploads-browser', (req, res) => {
           <div id="serverInfo" class="info">
             <div class="loading">Loading server info...</div>
           </div>
+          <p><strong>Storage Provider:</strong> Cloudinary</p>
+          <p>Your images are stored securely on Cloudinary's cloud storage.</p>
         </div>
         
         <div id="missing" class="tab-content">
@@ -202,11 +218,11 @@ app.get('/uploads-browser', (req, res) => {
               
               // Update server info
               const serverInfoDiv = document.getElementById('serverInfo');
-              serverInfoDiv.innerHTML = `
-                <p><strong>Environment:</strong> ${data.serverInfo.environment}</p>
-                <p><strong>Uploads path:</strong> ${data.serverInfo.uploadsPath}</p>
-                <p><strong>Total files:</strong> ${data.serverInfo.totalFiles}</p>
-              `;
+              serverInfoDiv.innerHTML = \`
+                <p><strong>Environment:</strong> \${data.serverInfo.environment}</p>
+                <p><strong>Storage:</strong> \${data.serverInfo.storage}</p>
+                <p><strong>Total files:</strong> \${data.serverInfo.totalFiles}</p>
+              \`;
               
               // Display files
               const fileGrid = document.getElementById('fileGrid');
@@ -215,46 +231,40 @@ app.get('/uploads-browser', (req, res) => {
                 return;
               }
               
-              fileGrid.innerHTML = data.files.map(file => `
+              fileGrid.innerHTML = data.files.map(file => \`
                 <div class="image-item">
-                  ${file.used ? '<span class="badge">In use</span>' : ''}
-                  <a href="${file.path}" target="_blank">
-                    <img src="${file.path}" alt="${file.name}" onerror="this.src='/placeholder.png'; this.onerror=null;">
-                    <div class="image-name">${file.name}</div>
+                  <span class="badge">Cloudinary</span>
+                  <a href="\${file.path}" target="_blank">
+                    <img src="\${file.path}" alt="\${file.name}" onerror="this.src='/placeholder.png'; this.onerror=null;">
+                    <div class="image-name">\${file.name}</div>
                   </a>
                   <div class="image-info">
-                    <small>Size: ${formatSize(file.size)}</small>
+                    <small>Created: \${new Date(file.created).toLocaleDateString()}</small>
                   </div>
                 </div>
-              `).join('');
+              \`).join('');
               
               // Display missing files
               const missingFilesDiv = document.getElementById('missingFiles');
               if (data.missingFiles.length === 0) {
-                missingFilesDiv.innerHTML = '<p>No missing files found - all database records have corresponding files.</p>';
+                missingFilesDiv.innerHTML = '<p>No missing files with Cloudinary storage.</p>';
               } else {
-                missingFilesDiv.innerHTML = data.missingFiles.map(file => `
+                missingFilesDiv.innerHTML = data.missingFiles.map(file => \`
                   <div class="missing-file">
-                    <p><strong>Filename:</strong> ${file.filename}</p>
-                    <p><strong>URL in database:</strong> ${file.url}</p>
-                    <p><strong>Record ID:</strong> ${file.id}</p>
+                    <p><strong>Filename:</strong> \${file.filename}</p>
+                    <p><strong>URL in database:</strong> \${file.url}</p>
+                    <p><strong>Record ID:</strong> \${file.id}</p>
                   </div>
-                `).join('');
+                \`).join('');
               }
             } catch (error) {
               console.error('Error loading server files:', error);
-              document.getElementById('fileGrid').innerHTML = `
+              document.getElementById('fileGrid').innerHTML = \`
                 <div class="error">
-                  <p>Error loading files: ${error.message}</p>
+                  <p>Error loading files: \${error.message}</p>
                 </div>
-              `;
+              \`;
             }
-          }
-          
-          function formatSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
           }
           
           // Load data when page loads
@@ -263,81 +273,6 @@ app.get('/uploads-browser', (req, res) => {
       </body>
     </html>
   `);
-});
-
-// API endpoint to list actual server files
-app.get('/api/server-files', async (req, res) => {
-  try {
-    const uploadsPath = path.join(__dirname, 'uploads');
-    console.log(`Reading server files from: ${uploadsPath}`);
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadsPath)) {
-      fs.mkdirSync(uploadsPath, { recursive: true });
-      console.log(`Created directory: ${uploadsPath}`);
-    }
-    
-    // Read the directory
-    const allFiles = fs.readdirSync(uploadsPath);
-    
-    // Filter and get file details
-    const files = allFiles
-      .filter(file => !file.startsWith('.') && !file.endsWith('.gitkeep'))
-      .map(file => {
-        const filePath = path.join(uploadsPath, file);
-        const stats = fs.statSync(filePath);
-        return {
-          name: file,
-          path: `/uploads/${file}`,
-          size: stats.size,
-          created: stats.birthtime
-        };
-      });
-    
-    // Get MongoDB records
-    const tattoos = await Tattoo.find();
-    const usedFiles = new Set();
-    
-    tattoos.forEach(tattoo => {
-      const filename = tattoo.imageUrl.split('/').pop();
-      usedFiles.add(filename);
-    });
-    
-    // Mark files as used or unused
-    const enhancedFiles = files.map(file => ({
-      ...file,
-      used: usedFiles.has(file.name)
-    }));
-    
-    // Find orphaned references (files in DB but not on disk)
-    const missingFiles = [];
-    tattoos.forEach(tattoo => {
-      const filename = tattoo.imageUrl.split('/').pop();
-      if (!allFiles.includes(filename)) {
-        missingFiles.push({
-          id: tattoo._id,
-          url: tattoo.imageUrl,
-          filename
-        });
-      }
-    });
-    
-    res.json({
-      serverInfo: {
-        environment: process.env.NODE_ENV || 'development',
-        uploadsPath,
-        totalFiles: files.length
-      },
-      files: enhancedFiles,
-      missingFiles
-    });
-  } catch (error) {
-    console.error('Error listing server files:', error);
-    res.status(500).json({
-      error: error.message,
-      stack: error.stack
-    });
-  }
 });
 
 // Data download endpoint
@@ -358,6 +293,47 @@ app.get('/download-data', async (req, res) => {
   } catch (error) {
     console.error('Error creating data download:', error);
     res.status(500).send(`Error: ${error.message}`);
+  }
+});
+
+// API endpoint to list files from Cloudinary
+app.get('/api/server-files', async (req, res) => {
+  try {
+    // Get MongoDB records
+    const tattoos = await Tattoo.find();
+    
+    // Create a representation of files from Cloudinary URLs
+    const files = tattoos.map(tattoo => {
+      // Extract the filename from the Cloudinary URL
+      const urlParts = tattoo.imageUrl.split('/');
+      const filenameWithExtension = urlParts[urlParts.length - 1];
+      const publicId = filenameWithExtension.split('.')[0];
+      
+      return {
+        name: filenameWithExtension,
+        path: tattoo.imageUrl, // Cloudinary URL
+        size: 'Stored on Cloudinary',
+        created: tattoo.createdAt,
+        used: true,
+        tattooId: tattoo._id
+      };
+    });
+    
+    res.json({
+      serverInfo: {
+        environment: process.env.NODE_ENV || 'development',
+        storage: 'Cloudinary',
+        totalFiles: files.length
+      },
+      files: files,
+      missingFiles: [] // No missing files with Cloudinary
+    });
+  } catch (error) {
+    console.error('Error listing files:', error);
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack
+    });
   }
 });
 
