@@ -8,11 +8,21 @@ const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
 
 // Configure Cloudinary
-cloudinary.config({
+const cloudinaryConfig = {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
-});
+};
+
+// Validate Cloudinary credentials
+if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
+  console.error('⚠️ Missing Cloudinary credentials in environment variables!');
+  console.error('Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set.');
+} else {
+  console.log('Cloudinary configuration found with cloud name:', cloudinaryConfig.cloud_name);
+}
+
+cloudinary.config(cloudinaryConfig);
 
 const app = express();
 const PORT = process.env.PORT || 10000; // Changed to match .env
@@ -75,11 +85,28 @@ const Tattoo = mongoose.model('Tattoo', tattooSchema);
 // API endpoints
 app.post('/api/tattoos', upload.single('image'), async (req, res) => {
   try {
+    // Log request information including user agent
+    console.log('Request received from:', req.headers['user-agent']);
+    
     if (!req.file) {
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
     const { price, timeInHours, tags } = req.body;
+    
+    // Convert and validate timeInHours
+    let parsedTimeInHours;
+    try {
+      parsedTimeInHours = parseFloat(timeInHours);
+      if (isNaN(parsedTimeInHours)) {
+        return res.status(400).json({ error: 'Time must be a valid number' });
+      }
+    } catch (parseError) {
+      console.error('Error parsing timeInHours:', timeInHours, parseError);
+      return res.status(400).json({ error: 'Invalid time format' });
+    }
+    
+    console.log('Parsed timeInHours:', parsedTimeInHours);
     
     if (!price || !timeInHours) {
       return res.status(400).json({ error: 'Price and time are required' });
@@ -92,21 +119,29 @@ app.post('/api/tattoos', upload.single('image'), async (req, res) => {
     // Convert buffer to data URI
     const dataURI = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
     
-    // Upload to Cloudinary
-    const cloudinaryResult = await cloudinary.uploader.upload(dataURI, {
-      folder: 'tattoo-data', // Creates a folder in your Cloudinary account
-      resource_type: 'image'
-    });
+    try {
+      console.log('Starting Cloudinary upload, file size:', fileBuffer.length, 'bytes');
+      // Upload to Cloudinary
+      const cloudinaryResult = await cloudinary.uploader.upload(dataURI, {
+        folder: 'tattoo-data', // Creates a folder in your Cloudinary account
+        resource_type: 'image'
+      });
+      console.log('Cloudinary upload successful, URL:', cloudinaryResult.secure_url);
+      
+      const newTattoo = new Tattoo({
+        imageUrl: cloudinaryResult.secure_url, // Use the Cloudinary URL
+        price: parseFloat(price),
+        timeInHours: parsedTimeInHours, // Use the validated value
+        tags: tags ? tags.split(',').map(tag => tag.trim()) : []
+      });
 
-    const newTattoo = new Tattoo({
-      imageUrl: cloudinaryResult.secure_url, // Use the Cloudinary URL
-      price: parseFloat(price),
-      timeInHours: parseFloat(timeInHours), // Store directly as hours
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : []
-    });
-
-    await newTattoo.save();
-    res.status(201).json({ success: true, tattoo: newTattoo });
+      await newTattoo.save();
+      console.log('Tattoo saved to database with ID:', newTattoo._id);
+      res.status(201).json({ success: true, tattoo: newTattoo });
+    } catch (cloudinaryError) {
+      console.error('Error during upload or database save:', cloudinaryError);
+      return res.status(500).json({ error: 'Failed to process upload', details: cloudinaryError.message });
+    }
   } catch (error) {
     console.error('Error saving tattoo data:', error);
     res.status(500).json({ error: 'Server error' });

@@ -64,15 +64,29 @@ document.addEventListener('DOMContentLoaded', () => {
       // Add a small delay on iOS to prevent animation jank
       if (isIOS) await new Promise(r => setTimeout(r, 100));
       
+      console.log('Submitting form data:', {
+        price: formData.get('price'),
+        timeInHours: formData.get('timeInHours'),
+        tags: formData.get('tags'),
+        imageFile: formData.get('image').name
+      });
+      
       const response = await fetch('/api/tattoos', {
         method: 'POST',
         body: formData
       });
       
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        throw new Error('Could not parse server response');
+      }
       
       if (!response.ok) {
-        throw new Error(result.error || 'Something went wrong');
+        console.error('Server error details:', result);
+        throw new Error(result.error || result.details || 'Something went wrong');
       }
       
       // Reset form
