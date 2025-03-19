@@ -143,12 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const tagsHTML = tattoo.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
       
-      // Add loading attribute to images for better performance
+      // Display time in hours
       tattooElement.innerHTML = `
         <img src="${tattoo.imageUrl}" alt="Tattoo" class="tattoo-image" loading="lazy">
         <div class="tattoo-details">
           <div class="tattoo-price">$${tattoo.price.toFixed(2)}</div>
-          <div class="tattoo-time">${formatTime(tattoo.timeInMinutes)}</div>
+          <div class="tattoo-time">${formatTime(tattoo.timeInHours)}</div>
           <div class="tattoo-tags">${tagsHTML || '<span class="tag">No tags</span>'}</div>
         </div>
       `;
@@ -157,18 +157,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  function formatTime(minutes) {
-    if (minutes < 60) {
-      return `${minutes} min`;
+  function formatTime(hours) {
+    if (hours === 1) {
+      return '1 hr';
+    } else if (Number.isInteger(hours)) {
+      return `${hours} hrs`;
+    } else {
+      // Convert decimal hours to hours and minutes for display
+      const wholeHours = Math.floor(hours);
+      const remainingMinutes = Math.round((hours - wholeHours) * 60);
+      
+      if (wholeHours === 0) {
+        return `${remainingMinutes} min`;
+      } else if (remainingMinutes === 0) {
+        return wholeHours === 1 ? '1 hr' : `${wholeHours} hrs`;
+      } else {
+        const hourText = wholeHours === 1 ? '1 hr' : `${wholeHours} hrs`;
+        return `${hourText} ${remainingMinutes} min`;
+      }
     }
-    
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (remainingMinutes === 0) {
-      return `${hours} hr`;
-    }
-    
-    return `${hours} hr ${remainingMinutes} min`;
   }
 });

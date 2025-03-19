@@ -59,7 +59,7 @@ const tattooSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  timeInMinutes: {
+  timeInHours: {
     type: Number,
     required: true
   },
@@ -101,7 +101,7 @@ app.post('/api/tattoos', upload.single('image'), async (req, res) => {
     const newTattoo = new Tattoo({
       imageUrl: cloudinaryResult.secure_url, // Use the Cloudinary URL
       price: parseFloat(price),
-      timeInMinutes: parseFloat(timeInHours) * 60, // Convert hours to minutes
+      timeInHours: parseFloat(timeInHours), // Store directly as hours
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     });
 
