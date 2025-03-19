@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Basic validation
     const price = formData.get('price');
-    const time = formData.get('timeInMinutes');
+    const time = formData.get('timeInHours');
     const image = formData.get('image');
     
     if (!price || !time || !image.name) {
