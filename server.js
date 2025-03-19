@@ -125,10 +125,15 @@ app.get('/uploads-browser', (req, res) => {
             .image-item { border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
             .image-item img { width: 100%; height: 200px; object-fit: cover; }
             .image-name { padding: 10px; text-align: center; overflow: hidden; text-overflow: ellipsis; }
+            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+            .download-btn { background: #4285f4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; }
           </style>
         </head>
         <body>
-          <h1>Uploads Browser</h1>
+          <div class="header">
+            <h1>Uploads Browser</h1>
+            <a href="/download-data" class="download-btn">Download All Data</a>
+          </div>
           <div class="image-grid">
             ${files.map(file => `
               <div class="image-item">
@@ -143,6 +148,27 @@ app.get('/uploads-browser', (req, res) => {
       </html>
     `);
   } catch (error) {
+    res.status(500).send(`Error: ${error.message}`);
+  }
+});
+
+// Data download endpoint
+app.get('/download-data', async (req, res) => {
+  try {
+    // Get all tattoo data from MongoDB
+    const tattoos = await Tattoo.find().sort({ createdAt: -1 });
+    
+    // Create a JSON file with the data
+    const dataJson = JSON.stringify(tattoos, null, 2);
+    
+    // Set headers for file download
+    res.setHeader('Content-Disposition', `attachment; filename=tattoo-data-${new Date().toISOString().slice(0,10)}.json`);
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Send the file
+    res.send(dataJson);
+  } catch (error) {
+    console.error('Error creating data download:', error);
     res.status(500).send(`Error: ${error.message}`);
   }
 });
