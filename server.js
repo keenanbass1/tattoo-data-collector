@@ -112,8 +112,18 @@ app.get('/api/tattoos', async (req, res) => {
 // Simple uploads browser
 app.get('/uploads-browser', (req, res) => {
   try {
-    const files = fs.readdirSync(path.join(__dirname, 'uploads'))
-      .filter(file => !file.startsWith('.'));
+    const uploadsPath = path.join(__dirname, 'uploads');
+    console.log(`Reading uploads from: ${uploadsPath}`);
+    
+    let files = [];
+    
+    // Check if directory exists before reading
+    if (fs.existsSync(uploadsPath)) {
+      files = fs.readdirSync(uploadsPath)
+        .filter(file => !file.startsWith('.') && !file.endsWith('.gitkeep'));
+    } else {
+      console.warn(`Uploads directory not found at ${uploadsPath}`);
+    }
     
     res.send(`
       <html>
@@ -127,6 +137,7 @@ app.get('/uploads-browser', (req, res) => {
             .image-name { padding: 10px; text-align: center; overflow: hidden; text-overflow: ellipsis; }
             .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
             .download-btn { background: #4285f4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; }
+            .info { margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
           </style>
         </head>
         <body>
@@ -134,6 +145,14 @@ app.get('/uploads-browser', (req, res) => {
             <h1>Uploads Browser</h1>
             <a href="/download-data" class="download-btn">Download All Data</a>
           </div>
+          
+          <div class="info">
+            <p>Found ${files.length} files in the uploads directory.</p>
+            <p>Server environment: ${process.env.NODE_ENV || 'development'}</p>
+            <p>Server path: ${uploadsPath}</p>
+          </div>
+          
+          ${files.length > 0 ? `
           <div class="image-grid">
             ${files.map(file => `
               <div class="image-item">
@@ -144,11 +163,15 @@ app.get('/uploads-browser', (req, res) => {
               </div>
             `).join('')}
           </div>
+          ` : `
+          <p>No images found in the uploads directory.</p>
+          `}
         </body>
       </html>
     `);
   } catch (error) {
-    res.status(500).send(`Error: ${error.message}`);
+    console.error('Error in uploads browser:', error);
+    res.status(500).send(`Error: ${error.message}<br>Stack: ${error.stack}`);
   }
 });
 
