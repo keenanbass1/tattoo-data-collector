@@ -122,6 +122,33 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchTattoos();
     }
   }, { passive: true });
+
+  // Handle delete button clicks
+  tattooList.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('delete-btn')) {
+      const id = e.target.dataset.id;
+      
+      if (confirm('Are you sure you want to delete this tattoo? This cannot be undone.')) {
+        try {
+          const response = await fetch(`/api/tattoos/${id}`, {
+            method: 'DELETE'
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to delete');
+          }
+          
+          // Refresh the list after successful deletion
+          fetchTattoos();
+        } catch (error) {
+          console.error('Error deleting tattoo:', error);
+          alert(`Error: ${error.message}`);
+        }
+      }
+    }
+  });
   
   // Fetch and display tattoo entries
   async function fetchTattoos() {
@@ -157,8 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const tagsHTML = tattoo.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
       
-      // Display time in hours
+      // Display time in hours with delete button
       tattooElement.innerHTML = `
+        <div class="tattoo-actions">
+          <button class="delete-btn" data-id="${tattoo._id}">Delete</button>
+        </div>
         <img src="${tattoo.imageUrl}" alt="Tattoo" class="tattoo-image" loading="lazy">
         <div class="tattoo-details">
           <div class="tattoo-price">$${tattoo.price.toFixed(2)}</div>

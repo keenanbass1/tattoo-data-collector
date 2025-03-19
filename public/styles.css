@@ -101,6 +101,35 @@ input[type="file"] {
   border-radius: 8px;
   overflow: hidden;
   transition: transform 0.3s;
+  position: relative;
+}
+
+.tattoo-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tattoo-item:hover .tattoo-actions {
+  opacity: 1;
+}
+
+.delete-btn {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.delete-btn:hover {
+  background-color: #ff3030;
 }
 
 .tattoo-item:hover {
@@ -150,6 +179,13 @@ input[type="file"] {
   
   .tattoo-list {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  /* Always show delete button on mobile */
+  .tattoo-actions {
+    opacity: 1;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 4px;
   }
 }
 

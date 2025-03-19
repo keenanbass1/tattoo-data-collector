@@ -158,6 +158,44 @@ app.get('/api/tattoos', async (req, res) => {
   }
 });
 
+// Delete a tattoo
+app.delete('/api/tattoos/:id', async (req, res) => {
+  try {
+    const tattooId = req.params.id;
+    
+    // Find the tattoo to get its image URL
+    const tattoo = await Tattoo.findById(tattooId);
+    
+    if (!tattoo) {
+      return res.status(404).json({ error: 'Tattoo not found' });
+    }
+    
+    // Extract the public ID from the Cloudinary URL
+    const urlParts = tattoo.imageUrl.split('/');
+    const publicIdWithExtension = urlParts[urlParts.length - 1];
+    const publicId = 'tattoo-data/' + publicIdWithExtension.split('.')[0];
+    
+    console.log(`Attempting to delete image with public ID: ${publicId}`);
+    
+    // Delete from Cloudinary
+    try {
+      const cloudinaryResult = await cloudinary.uploader.destroy(publicId);
+      console.log('Cloudinary delete result:', cloudinaryResult);
+    } catch (cloudinaryError) {
+      console.error('Error deleting from Cloudinary:', cloudinaryError);
+      // Continue with database deletion even if Cloudinary delete fails
+    }
+    
+    // Delete from database
+    await Tattoo.findByIdAndDelete(tattooId);
+    
+    res.json({ success: true, message: 'Tattoo deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting tattoo:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Simple uploads browser
 app.get('/uploads-browser', (req, res) => {
   res.send(`
