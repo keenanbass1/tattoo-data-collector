@@ -123,28 +123,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, { passive: true });
 
-  // Handle delete button clicks
+  // Handle delete button clicks with improved error reporting
   tattooList.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-btn')) {
       const id = e.target.dataset.id;
+      console.log('Delete button clicked for ID:', id);
       
       if (confirm('Are you sure you want to delete this tattoo? This cannot be undone.')) {
         try {
+          console.log('Sending delete request for ID:', id);
           const response = await fetch(`/api/tattoos/${id}`, {
             method: 'DELETE'
           });
           
           const result = await response.json();
+          console.log('Delete response:', result);
           
           if (!response.ok) {
             throw new Error(result.error || 'Failed to delete');
           }
           
           // Refresh the list after successful deletion
+          alert('Tattoo deleted successfully!');
           fetchTattoos();
         } catch (error) {
           console.error('Error deleting tattoo:', error);
-          alert(`Error: ${error.message}`);
+          alert(`Error deleting: ${error.message}`);
         }
       }
     }
@@ -184,12 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const tagsHTML = tattoo.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
       
-      // Display time in hours with delete button
+      // Display time in hours with delete button - with improved positioning
       tattooElement.innerHTML = `
         <div class="tattoo-actions">
           <button class="delete-btn" data-id="${tattoo._id}">Delete</button>
         </div>
-        <img src="${tattoo.imageUrl}" alt="Tattoo" class="tattoo-image" loading="lazy">
+        <img src="${tattoo.imageUrl}" alt="Tattoo" class="tattoo-image" loading="lazy" onerror="this.src='/img/placeholder.svg'">
         <div class="tattoo-details">
           <div class="tattoo-price">$${tattoo.price.toFixed(2)}</div>
           <div class="tattoo-time">${formatTime(tattoo.timeInHours)}</div>
