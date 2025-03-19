@@ -25,7 +25,7 @@ if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConf
 cloudinary.config(cloudinaryConfig);
 
 const app = express();
-const PORT = process.env.PORT || 10000; // Changed to match .env
+const PORT = process.env.PORT || 3000; // Standard port for Render
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
